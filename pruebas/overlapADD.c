@@ -38,11 +38,12 @@ void convNormalIndex(double* x, size_t signalStart, size_t signalEnd, double *h,
 void convOverlapAdd(double* partX, size_t lx, double localBuffer[], size_t lb/*potencia de 2*/, double* h, size_t lh, double y[]) {
 
     size_t i,j = 0;
-
+/*
     if(lx <= lh){
         printf("H size (%d) must be smaller than X size (%d)\n",(int)lh,(int)lx);
         exit(0);
     }
+*/
     convNormalIndex(partX, 0, lx, h, lh, localBuffer);
 /*
     for (j = 0; j < lb; j++) {
@@ -61,8 +62,8 @@ void convOverlapAdd(double* partX, size_t lx, double localBuffer[], size_t lb/*p
         localBuffer[j] = 0;
         j++;
     }
-/*
-    for (j = 0; j < lb; j++) {
+
+/*    for (j = 0; j < lb; j++) {
         printf("localBuffer[%d] = %f\t",(int)j,localBuffer[j]);
         printf("MD_localBffer[%d] = %p\n",(int)j,&localBuffer[j]);
     }
@@ -79,7 +80,7 @@ int main(void)
     double filter[] = { 2,1 };
     int sizeSignal = 8;
     int sizeFilter = 2;
-    double* result = (double *) calloc(sizeSignal + sizeFilter - 1, sizeof(double));
+    double* result = (double *) calloc( (sizeSignal + sizeFilter - 1) , sizeof(double));
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
@@ -95,6 +96,7 @@ int main(void)
     }
     printf("\n");
 */
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     free(result);
     result = (double *) calloc(COUNT(signal) + COUNT(filter) - 1, sizeof(double));
@@ -115,7 +117,7 @@ int main(void)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     free(result);
-    result = (double *) calloc(sizeSignal + sizeFilter - 1, sizeof(double));
+    result = (double *) calloc(sizeSignal + sizeFilter - 1 + 4, sizeof(double));
 
     int block_size = 4;
     int l_localBuffer = nextpw2(block_size+sizeFilter-1);
@@ -138,6 +140,21 @@ int main(void)
         convOverlapAdd(&signal[j*block_size], block_size, localBuffer, l_localBuffer, filter, sizeFilter, &result[j*block_size]);
     }
 
+    double * lastPass = (double *) calloc(block_size, sizeof(double));
+    int last_index = j*block_size;
+    int sizeleft = sizeSignal - last_index;
+    int z;
+
+    //printf("Ultimo recorrido: ultimoIndice: %d, tamañoRestante: %d\n",last_index,sizeleft);
+    if( sizeleft != 0 ){
+        for (z = 0; z < sizeleft; ++z) {
+            //printf("%f\n",signal[z+last_index]);
+            lastPass[z] = signal[z+last_index];
+        }
+    }
+
+    convOverlapAdd(&lastPass[0], block_size, localBuffer, l_localBuffer, filter, sizeFilter, &result[last_index]);
+
     toc = clock();
     printf("Elapsed: %f seconds\n", (double)(toc - tic) / CLOCKS_PER_SEC);
     printf("Resultado Final:\n");
@@ -145,17 +162,17 @@ int main(void)
         printf("%f ",result[j]);
         //printf("%f \t",result[j]);
         //printf("MD_result[%d] = %p\n",(int)j,&result[j]);
-
     }
     printf("\n");
     free(localBuffer);
+    free(lastPass);
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     double *A = malloc( resultLength*sizeof(double) );
     double *B = malloc( resultLength*sizeof(double) );
-    double *C = (double *) calloc(resultLength, sizeof(double));
+    double *C = (double *) calloc(resultLength + 512, sizeof(double));
 
 
     /* datos aleatorios */
@@ -174,34 +191,55 @@ int main(void)
     printf("Elapsed: %f miliseconds\n", (double)(toc - tic)*1000 / CLOCKS_PER_SEC);
 
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    tic = clock();
     block_size = 512;
     l_localBuffer = nextpw2(block_size+filterLength-1);
     localBuffer = (double *) calloc(l_localBuffer, sizeof(double));
     printf("size = %d\n",l_localBuffer);
 
-    tic = clock();
+    //tic = clock();
     for( j=0; j<(signalLength/block_size); j++ ) {
         //printf("Bucle externo j: %d, indice:%d\n",j,j*block_size);
         //que empiece enl puntero en el inicio del vector signal o result pero en (j*block_size)
         convOverlapAdd(&soundRandom[j*block_size], block_size, localBuffer, l_localBuffer, H_1, filterLength, &C[j*block_size]);
     }
-    toc = clock();
-    printf("Elapsed: %f seconds\n", (double)(toc - tic) / CLOCKS_PER_SEC);
-
-
-    printf("A\tB\tC\n");
-    //int j;
-    for( j=0; j<block_size; j++ ) {
-        if(A[j]-C[j] != 0){
-            printf("%f\t%f\n ",A[j],C[j]);
-        }
-    }
 
 /*
-    printf("[");
-    int j;
-    for( j=0; j<resultLength; j++ ) {
-        if (j == resultLength-1){
+ *  añadir ultimo recorrido.
+*/
+
+    lastPass = (double *) calloc(block_size, sizeof(double));
+    last_index = j*block_size;
+    sizeleft = signalLength - last_index;
+
+    //printf("Ultimo recorrido: ultimoIndice: %d, tamañoRestante: %d\n",last_index,sizeleft);
+    if( sizeleft != 0 ){
+        for (z = 0; z < sizeleft; ++z) {
+            //printf("sound[%d]=%f\n",z+last_index,soundRandom[z+last_index]);
+            lastPass[z] = soundRandom[z+last_index];
+        }
+    }
+    convOverlapAdd(&lastPass[0], block_size, localBuffer, l_localBuffer, H_1, filterLength, &C[last_index]);
+
+    toc = clock();
+    printf("Elapsed: %f miliseconds\n", (double)(toc - tic)*1000 / CLOCKS_PER_SEC);
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*    printf("A\tB\tC\n");
+    //int j;
+    for( j=0; j<(signalLength+filterLength-1); j++ ) {
+        if(A[j]-C[j] != 0){
+            printf("%d => %f\t%f\n",(int)j,A[j],C[j]);
+        }
+    }
+*/
+
+/*    printf("[");
+    for( j=0; j<resultLength+512; j++ ) {
+        if (j == resultLength+512-1){
             printf("%f ",C[j]);
         }else{
             printf("%f, ",C[j]);
