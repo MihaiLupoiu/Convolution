@@ -1,4 +1,5 @@
 // $ gcc -fsanitize=address -g overlapADD.c -lm
+// $ gcc -fopenmp -fsanitize=address -g overlapADD.c -lm
 
 #include <stddef.h>
 #include <stdio.h>
@@ -15,16 +16,18 @@ int main(void) {
     //filterLength = 61;
 
     int j,z;
-    //int tamX = 10000;
-    //int tamResultado = tamX+filterLength;
-    int tamX = signalLength;
-    int tamResultado = tamX+filterLength-1;
+    int tamX = 10000;
+    int tamResultado = tamX+filterLength;
+
+    //Señal guardada
+    //int tamX = signalLength;
+    //int tamResultado = tamX+filterLength-1;
 
 
 
     //vector señal
-    //double *A = malloc( tamX * sizeof(double) );
-    double *A = soundRandom;
+    double *A = malloc( tamX * sizeof(double) );
+    //double *A = soundRandom;
 
     //vector resultado convolucion normal
     double *B = malloc( tamResultado*sizeof(double) );
@@ -47,17 +50,17 @@ int main(void) {
 
     /* generar datos aleatorios para el vector A*/
     //printf("[");
-/*    for( j=0; j<tamX; j++ ) {
+    for( j=0; j<tamX; j++ ) {
         A[j] = ((double) rand()/ RAND_MAX);
         //printf("%f, ",A[j]);
     }
     //printf("]\n");
-*/
+
 
     tic = clock();
     convNormalIndex(A,0,tamX,H_1,filterLength,B);
     toc = clock();
-    //printf("Elapsed: %f miliseconds\n", (double)(toc - tic)*1000 / CLOCKS_PER_SEC);
+    printf("Elapsed: %f miliseconds\n", (double)(toc - tic)*1000 / CLOCKS_PER_SEC);
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -79,19 +82,19 @@ int main(void) {
     }
 
     toc = clock();
-    //printf("Elapsed: %f miliseconds\n", (double)(toc - tic)*1000 / CLOCKS_PER_SEC);
+    printf("Elapsed: %f miliseconds\n", (double)(toc - tic)*1000 / CLOCKS_PER_SEC);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     //printf("A\tB\tC\n");
     //int j;
-    for( j=0; j<(tamX+filterLength-1); j++ ) {
+/*    for( j=0; j<(tamX+filterLength-1); j++ ) {
         //if(B[j]-C[j] != 0){
             printf("%d\t%20.18f\t",(int)j,B[j]);
             printf("%20.18f\n",C[j]);
         //}
     }
-
+*/
 
 /*    printf("[");
     for( j=0; j<resultLength+512; j++ ) {

@@ -13,6 +13,9 @@
 #include <math.h>
 #include <string.h>
 
+//OpenMP
+#include <omp.h>
+
 //importar muestra
 #include "../import/muestra.h"
 
@@ -27,6 +30,7 @@ void convNormalIndex(double* x, size_t signalStart, size_t signalEnd, double *h,
     size_t i,j;
     size_t lx = signalEnd-signalStart;
 
+    //#pragma omp parallel for
     for(i=signalStart;i<signalEnd; i++){
         for(j=0;j<lh;j++){
              y[i+j]=y[i+j]+x[i]*h[j];
@@ -41,12 +45,14 @@ void convOverlapAdd(double* partX, size_t lx, double localBuffer[], size_t lb/*p
 
     convNormalIndex(partX, 0, lx, h, lh, localBuffer);
 
+    //#pragma omp parallel for
     for (j = 0; j < lx; j++) {
         y[j]= localBuffer[j];
         localBuffer[j] = 0;
     }
 
-   for (i = 0; i < lx; i++) {
+    //#pragma omp parallel for
+    for (i = 0; i < lx; i++) {
         localBuffer[i] = localBuffer[j];
         localBuffer[j] = 0;
         j++;
