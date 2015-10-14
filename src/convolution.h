@@ -19,6 +19,10 @@
 
 int nextpw2(int valor);
 void convNormalIndex(double* x, size_t signalStart, size_t signalEnd, double *h, size_t lh, double y[]);
+void convOverlapAdd(double* partX, size_t lx, double localBuffer[], size_t lb/*potencia de 2*/, double* h, size_t lh, double y[]);
+
+void convNormalIndex_P(double* x, size_t signalStart, size_t signalEnd, double *h, size_t lh, double y[]);
+void convOverlapAdd_P(double* partX, size_t lx, double localBuffer[], size_t lb/*potencia de 2*/, double* h, size_t lh, double y[]);
 
 #endif
 

@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #define CHUNKSIZE   10
 #define N       100
+//http://openmp.org/mp-documents/OpenMP4.0.0.Examples.pdf
 
 int main (int argc, char *argv[])
 {
